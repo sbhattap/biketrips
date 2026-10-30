@@ -1,0 +1,66 @@
+seed: 42
+
+data:
+  drive_folder: https://drive.google.com/drive/u/3/folders/1sLp2mWlBMX3mRnkTAzHcMBStCXLK2KDN
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  results_dir: results
+  # Relative to raw_dir/"Shenzhen Bike-Share Data"
+  trips_csv: 8.01-8.30/shared_bike_data/21_1000w.csv
+  trips_zip: 8.01-8.30/shared_bike_data.zip
+  poi_zip: ShenzhenPOI/ShapeFile.zip
+  poi_dir: ShenzhenPOI/ShapeFile
+  poi_codes: ShenzhenPOI/amap_poicode.xlsx
+  boundary: shenzhen/shenzhen_one.shp
+  population: pop/pop_shenzhen.tif
+  bus_stops: bus_metro/bus_station_shp/bus_station_point.shp
+  metro_stops: bus_metro/metro_area.csv
+
+cleaning:
+  lng_range: [113.7, 114.7]
+  lat_range: [22.0, 23.0]
+  min_duration_s: 1
+  # Shared bikes are short-hop vehicles; multi-hour rentals are mostly unlocked-and-forgotten bikes.
+  max_duration_s: 14400
+
+eda:
+  sample_fraction: 0.10
+  noise_fractions: [0.01, 0.10, 1.0]
+
+features:
+  h3_res: 8
+  parent_res: 6
+  # Buffer the boundary by about one res-8 edge so coastal cells that touch the city are kept.
+  boundary_buffer_deg: 0.005
+
+cv:
+  test_frac: 0.2
+  n_splits: 5
+  top_frac: 0.10
+
+models:
+  linear:
+    alpha: [0.01, 0.1, 1.0, 10.0, 100.0]
+  knn:
+    k: [3, 5, 8, 12, 20]
+  poisson:
+    alpha: [0.0001, 0.001, 0.01, 0.1, 1.0]
+  xgb:
+    n_trials: 40
+    space:
+      n_estimators: [100, 800]
+      max_depth: [2, 8]
+      learning_rate: [0.01, 0.3]
+      min_child_weight: [1, 20]
+      subsample: [0.5, 1.0]
+      colsample_bytree: [0.4, 1.0]
+      reg_lambda: [0.001, 10.0]
+  gcn:
+    hidden: [16, 32, 64]
+    k: [4, 8]
+    lr: [0.01, 0.003]
+    dropout: [0.0, 0.3]
+    max_epochs: 2000
+    patience: 100
+    val_frac: 0.2
