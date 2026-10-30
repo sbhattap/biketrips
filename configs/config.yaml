@@ -64,3 +64,10 @@ models:
     max_epochs: 2000
     patience: 100
     val_frac: 0.2
+
+# Trips, metro and bus stops come in GCJ-02 (AMap's offset coordinates); POIs, the boundary and
+# the population raster are WGS84. Subtracting this offset maps GCJ-02 to WGS84. It is the mean
+# of (GCJ "location" minus WGS geometry) over POI files that carry both (std about 13 m).
+gcj_offset:
+  lng: 0.004973
+  lat: -0.002847

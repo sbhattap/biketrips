@@ -1,0 +1,31 @@
+stage,step,action,rows,of,reason
+trips,raw rows,info,9980998,9980998,100% of 21_1000w.csv
+trips,missing_id,drop,0,9980998,no trip id
+trips,duplicate_id,drop,0,9980998,"repeated trip id, first kept"
+trips,bad_timestamp,drop,0,9980998,null or unparseable timestamp
+trips,end_before_start,drop,0,9980998,end time before start
+trips,zero_duration,drop,1356,9980998,duration under min_duration_s
+trips,extreme_duration,drop,50,9979642,duration over max_duration_s
+trips,missing_coords,drop,0,9979592,null coordinate
+trips,zero_coords,drop,11539,9979592,"GPS (0, 0) placeholder"
+trips,start_out_of_bounds,drop,2025,9968053,start outside Shenzhen bbox
+trips,end_out_of_bounds,drop,318,9966028,"start in bbox, end outside"
+trips,coordinate shift,fix,9965710,9965710,GCJ-02 to WGS84 via gcj_offset
+cells,trip ends outside grid,drop,534,9965710,end cell centre outside the buffered boundary
+cells,cells with no trip end,fill,1374,3272,"trips = 0, is_zero = 1; zero may mean no bikes (supply), not no demand"
+pois,raw rows,info,1127200,1127200,23 shapefiles
+pois,no shapefile: CultureEducation,info,0,1127200,category in amap_poicode.xlsx only
+pois,category name check,info,0,40824,rows whose Chinese 大类 disagrees with the sanitized file category
+pois,no Chinese category column,info,1086376,1127200,"geometry-only files, category taken from file name"
+pois,missing geometry,drop,0,1127200,null or empty point
+pois,invalid geometry,drop,0,1127200,shapely is_valid is False
+pois,duplicate id,drop,635,1127200,"same AMap id twice, first kept"
+pois,"same point, same category",flag,17654,1126565,"kept: co-located venues (malls, towers) share a geocode"
+pois,"same point, other category",flag,16439,1126565,kept: multi-use addresses
+transit,metro stations,info,234,234,metro_area.csv rows
+transit,bus duplicate stations,drop,20402,26406,same id_station listed once per route
+transit,coordinate shift,fix,6238,6238,GCJ-02 to WGS84 via gcj_offset
+cells,POIs outside grid,drop,2,1126565,POI cell not in buffered boundary grid
+cells,POI counts missing,fill,15801,75256,cell x category with no POI = 0 (true zero)
+cells,zero-trip cells,flag,1374,3272,is_zero = 1
+cells,zero POI and zero trips,flag,605,3272,likely water or non-urban; results reported with and without trivial zeros
