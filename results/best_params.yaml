@@ -1,0 +1,10 @@
+linear:
+  random:
+    alpha: 100.0
+  spatial:
+    alpha: 0.001
+knn:
+  random:
+    k: 3
+  spatial:
+    k: 20
