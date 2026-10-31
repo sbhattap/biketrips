@@ -22,10 +22,11 @@ pois,invalid geometry,drop,0,1127200,shapely is_valid is False
 pois,duplicate id,drop,635,1127200,"same AMap id twice, first kept"
 pois,"same point, same category",flag,17654,1126565,"kept: co-located venues (malls, towers) share a geocode"
 pois,"same point, other category",flag,16439,1126565,kept: multi-use addresses
+cells,POIs outside grid,drop,2,1126565,POI cell not in buffered boundary grid
+cells,POI counts missing,fill,15801,75256,cell x category with no POI = 0 (true zero)
 transit,metro stations,info,234,234,metro_area.csv rows
 transit,bus duplicate stations,drop,20402,26406,same id_station listed once per route
 transit,coordinate shift,fix,6238,6238,GCJ-02 to WGS84 via gcj_offset
-cells,POIs outside grid,drop,2,1126565,POI cell not in buffered boundary grid
-cells,POI counts missing,fill,15801,75256,cell x category with no POI = 0 (true zero)
-cells,zero-trip cells,flag,1374,3272,is_zero = 1
-cells,zero POI and zero trips,flag,605,3272,likely water or non-urban; results reported with and without trivial zeros
+cells,population outside raster coverage,flag,998,3272,kept as NaN + pop_missing; imputed inside model pipelines on training folds only
+cells,trivial cells,flag,608,3272,zero POIs and zero or unknown population; metrics reported with and without them
+cells,trivial cells with trips,info,64,608,trivial cells that still have trip ends

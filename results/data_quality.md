@@ -28,8 +28,9 @@ fix and flag is listed with a row count and a reason.
 | cells with no trip end | fill | 1,374 | 3,272 | 41.9927% | trips = 0, is_zero = 1; zero may mean no bikes (supply), not no demand |
 | POIs outside grid | drop | 2 | 1,126,565 | 0.0002% | POI cell not in buffered boundary grid |
 | POI counts missing | fill | 15,801 | 75,256 | 20.9963% | cell x category with no POI = 0 (true zero) |
-| zero-trip cells | flag | 1,374 | 3,272 | 41.9927% | is_zero = 1 |
-| zero POI and zero trips | flag | 605 | 3,272 | 18.4902% | likely water or non-urban; results reported with and without trivial zeros |
+| population outside raster coverage | flag | 998 | 3,272 | 30.5012% | kept as NaN + pop_missing; imputed inside model pipelines on training folds only |
+| trivial cells | flag | 608 | 3,272 | 18.5819% | zero POIs and zero or unknown population; metrics reported with and without them |
+| trivial cells with trips | info | 64 | 608 | 10.5263% | trivial cells that still have trip ends |
 
 ## pois
 

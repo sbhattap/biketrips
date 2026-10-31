@@ -3,8 +3,13 @@ import geopandas as gpd
 import h3
 import numpy as np
 import pandas as pd
+import rasterio
+from pyproj import Transformer
 from scipy import sparse
 from shapely.geometry import Polygon, mapping
+from sklearn.neighbors import BallTree
+
+from biketrips import data
 
 
 def full_grid(boundary, res, buffer_deg):
@@ -79,3 +84,63 @@ def poi_counts(pois, grid, res, log=None):
     out[cols] = out[cols].fillna(0).astype(int)
     out["poi_total"] = out[cols].sum(axis=1)
     return out
+
+
+def population(path, grid, res, log=None):
+    """Mean population per raster pixel in each cell. No valid pixel means unknown, not zero."""
+    with rasterio.open(path) as r:
+        band, nodata, transform, crs = r.read(1), r.nodata, r.transform, r.crs
+    rows, cols = np.nonzero(band != nodata)
+    x, y = rasterio.transform.xy(transform, rows, cols)
+    lng, lat = Transformer.from_crs(crs, 4326, always_xy=True).transform(x, y)
+    px = pd.DataFrame({"h3": to_cells(lat, lng, res), "v": band[rows, cols]})
+    out = grid[["h3"]].merge(px.groupby("h3")["v"].mean().rename("pop_density"), on="h3", how="left")
+    out["pop_missing"] = out["pop_density"].isna().astype(int)
+    if log is not None:
+        log.add("cells", "population outside raster coverage", "flag", out["pop_missing"].sum(), len(out),
+                "kept as NaN + pop_missing; imputed inside model pipelines on training folds only")
+    return out
+
+
+def transit(grid, metro, bus, res):
+    tree = BallTree(np.radians(metro[["lat", "lng"]].to_numpy()), metric="haversine")
+    dist, _ = tree.query(np.radians(grid[["lat", "lng"]].to_numpy()))
+    stops = pd.Series(to_cells(bus["lat"], bus["lng"], res)).value_counts()
+    out = pd.DataFrame({"h3": grid["h3"], "metro_dist_m": dist[:, 0] * 6_371_000,
+                        "bus_stops": grid["h3"].map(stops).fillna(0).astype(int).to_numpy()})
+    # Nearest stop always exists, so any NaN here is a bug, not missing data.
+    assert out["metro_dist_m"].notna().all()
+    return out
+
+
+def spatial_lags(cells, cols):
+    """Sum of each column over the k-ring 1 neighbours (self excluded)."""
+    lag = neighbors(cells["h3"].tolist()) @ cells[cols].to_numpy(float)
+    return pd.DataFrame(lag, columns=[f"lag_{c}" for c in cols], index=cells.index)
+
+
+def feature_columns(cells):
+    keep = ("poi_", "lag_", "pop_", "metro_", "bus_")
+    return [c for c in cells.columns if c.startswith(keep)]
+
+
+def build_cells(cfg, con, log=None):
+    """One row per H3 cell on the full grid: target, flags, features, and the spatial group id."""
+    res, d = cfg["features"]["h3_res"], cfg["data"]
+    grid = full_grid(data.load_boundary(cfg), res, cfg["features"]["boundary_buffer_deg"])
+    cells = trip_target(con, grid, log)
+    poi = poi_counts(data.load_pois(cfg, log), grid, res, log)
+    metro, bus = data.load_transit(cfg, log)
+    for part in (poi, population(d["population"], grid, res, log), transit(grid, metro, bus, res)):
+        cells = cells.merge(part, on="h3", validate="one_to_one")
+    lag_cols = [c for c in cells.columns if c.startswith("poi_")]
+    cells = cells.join(spatial_lags(cells, lag_cols))
+    cells["group"] = [h3.h3_to_parent(c, cfg["features"]["parent_res"]) for c in cells["h3"]]
+    # Zero POIs and no known population: mostly water, mountains or the border strip.
+    cells["trivial"] = ((cells["poi_total"] == 0) & (cells["pop_density"].fillna(0) == 0)).astype(int)
+    if log is not None:
+        log.add("cells", "trivial cells", "flag", cells["trivial"].sum(), len(cells),
+                "zero POIs and zero or unknown population; metrics reported with and without them")
+        log.add("cells", "trivial cells with trips", "info", (cells["trivial"] & ~cells["is_zero"]).sum(),
+                cells["trivial"].sum(), "trivial cells that still have trip ends")
+    return cells
