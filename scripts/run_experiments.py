@@ -14,17 +14,18 @@ def run(name, cfg, cells):
     res, cv = cfg["data"]["results_dir"], cfg["cv"]
     ctx = {"features": features.feature_columns(cells), "seed": cfg["seed"], "cells": cells,
            "top_frac": cv["top_frac"]}
-    best, preds = {}, []
+    best, preds, ts = {}, [], evaluate.now()
     for split in ("random", "spatial"):
         test = splits.holdout(cells, split, cv["test_frac"], cfg["seed"])
         train, held = cells[~test].reset_index(drop=True), cells[test].reset_index(drop=True)
         folds = splits.inner_folds(train, split, cv["n_splits"], cfg["seed"])
         params, cv_metrics = tune.search(name, cfg, train, folds, ctx)
         for i, m in enumerate(cv_metrics, 1):
-            evaluate.append_metrics(res / "metrics.csv", name, split, f"cv{i}", m)
+            evaluate.append_metrics(res / "metrics.csv", name, split, f"cv{i}", m, ts)
         model = make(name, ctx["features"], params, cfg["seed"], cells).fit(train, train["trips"])
         pred = model.predict(held)
-        evaluate.append_metrics(res / "metrics.csv", name, split, "test", evaluate.score(held, pred, cv["top_frac"]))
+        test_metrics = evaluate.score(held, pred, cv["top_frac"])
+        evaluate.append_metrics(res / "metrics.csv", name, split, "test", test_metrics, ts)
         preds.append(held[["h3", "trips"]].assign(model=name, split_type=split, pred=pred))
         best[split] = {k: v for k, v in params.items() if k != "cells"}
         print(f"{name:8s} {split:8s} test cells {len(held)} best {best[split]}")

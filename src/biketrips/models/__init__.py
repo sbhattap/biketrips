@@ -21,8 +21,8 @@ def tabular(estimator):
 
 
 def make(name, features, params, seed=42, cells=None):
-    from biketrips.models import knn, linear
-    registry = {"linear": linear.Linear, "knn": knn.SpatialKNN}
+    from biketrips.models import knn, linear, poisson
+    registry = {"linear": linear.Linear, "knn": knn.SpatialKNN, "poisson": poisson.PoissonGLM}
     if name == "gcn":
         params = dict(params, cells=cells)
     return registry[name](features, seed, **params)

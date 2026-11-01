@@ -8,3 +8,8 @@ knn:
     k: 3
   spatial:
     k: 20
+poisson:
+  random:
+    alpha: 10.0
+  spatial:
+    alpha: 1.0

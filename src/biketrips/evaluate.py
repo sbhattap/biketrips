@@ -46,10 +46,14 @@ def git_sha():
     return r.stdout.strip() or "unknown"
 
 
-def append_metrics(path, model, split_type, fold, values):
+def now():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def append_metrics(path, model, split_type, fold, values, timestamp=None):
+    """All rows of one run should share `timestamp` so `latest` can pick the run as a unit."""
     rows = pd.DataFrame({"model": model, "split_type": split_type, "fold": fold, "metric": list(values),
-                         "value": list(values.values()),
-                         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                         "value": list(values.values()), "timestamp": timestamp or now(),
                          "git_sha": git_sha()})
     rows.to_csv(path, mode="a", header=not path.exists(), index=False)
 
