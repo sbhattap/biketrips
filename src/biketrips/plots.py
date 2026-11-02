@@ -53,3 +53,9 @@ def scatter(x, y, ax=None, title="", xlabel="", ylabel="", loglog=False, diagona
         ax.plot(lim, lim, "k--", lw=1)
     ax.set(title=title, xlabel=xlabel, ylabel=ylabel)
     return ax
+
+
+def importance(series, ax=None, top=20, title="Feature importance (total gain)"):
+    ax = _ax(ax, (7, 7))
+    s = series.head(top)[::-1]
+    return bar(s / s.max(), ax, title, "relative gain", horizontal=True)

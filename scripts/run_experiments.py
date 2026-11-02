@@ -1,10 +1,11 @@
 """Tune each model on inner folds, score once on the held-out test set, for both split types."""
 import argparse
 
+import matplotlib
 import pandas as pd
 import yaml
 
-from biketrips import config, evaluate, features, splits, tune
+from biketrips import config, evaluate, features, plots, splits, tune
 from biketrips.models import make
 
 MODELS = ["linear", "knn", "poisson", "xgb", "gcn"]
@@ -42,6 +43,14 @@ def update_outputs(res, name, best, preds):
     pd.concat([old[old.get("model") != name] if len(old) else old, preds]).to_csv(ppath, index=False)
 
 
+def save_importance(res, imp):
+    matplotlib.use("Agg")
+    imp.rename("total_gain").to_csv(res / "xgb_importance.csv", index_label="feature")
+    ax = plots.importance(imp, title="XGBoost feature importance, spatial split (total gain)")
+    ax.figure.tight_layout()
+    ax.figure.savefig(res / "figures" / "xgb_importance.png", dpi=120)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", choices=MODELS + ["all"], default="all")
@@ -49,8 +58,10 @@ def main():
     cfg = config.load_config()
     cells = pd.read_parquet(cfg["data"]["processed_dir"] / "cells.parquet")
     for name in names:
-        best, preds, _ = run(name, cfg, cells)
+        best, preds, model = run(name, cfg, cells)
         update_outputs(cfg["data"]["results_dir"], name, best, preds)
+        if name == "xgb":  # importance from the spatial-split model
+            save_importance(cfg["data"]["results_dir"], model.importance())
     m = evaluate.latest(cfg["data"]["results_dir"] / "metrics.csv")
     m = m[(m["fold"] == "test") & m["metric"].isin(["mae", "spearman", "top10_hit", "r2", "r2_nontrivial"])]
     print(m.pivot_table(index=["model", "split_type"], columns="metric", values="value").round(3))

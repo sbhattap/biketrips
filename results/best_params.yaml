@@ -13,3 +13,20 @@ poisson:
     alpha: 10.0
   spatial:
     alpha: 1.0
+xgb:
+  random:
+    n_estimators: 437
+    max_depth: 3
+    learning_rate: 0.10121644277594667
+    min_child_weight: 2
+    subsample: 0.7991341332960198
+    colsample_bytree: 0.5797511266530957
+    reg_lambda: 0.5195693495666391
+  spatial:
+    n_estimators: 280
+    max_depth: 3
+    learning_rate: 0.06697564702803946
+    min_child_weight: 6
+    subsample: 0.7781664064121103
+    colsample_bytree: 0.5815924087231175
+    reg_lambda: 6.729109439459797

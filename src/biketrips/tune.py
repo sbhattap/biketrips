@@ -1,5 +1,6 @@
 """Hyperparameter search on inner folds. Candidates are ranked by mean Poisson deviance."""
 import numpy as np
+import optuna
 from sklearn.model_selection import ParameterGrid
 
 from biketrips.evaluate import metrics
@@ -28,6 +29,26 @@ def grid_search(name, grid, train, folds, ctx):
     return best[1], best[2]
 
 
+def optuna_search(name, space, n_trials, train, folds, ctx):
+    """TPE over `space` ({param: [low, high]}); int bounds give int params, rates are log-scaled."""
+    cvs = {}
+
+    def objective(trial):
+        params = {k: trial.suggest_int(k, lo, hi) if isinstance(lo, int) and isinstance(hi, int)
+                  else trial.suggest_float(k, lo, hi, log=k in ("learning_rate", "reg_lambda"))
+                  for k, (lo, hi) in space.items()}
+        cvs[trial.number] = cross_validate(name, params, train, folds, ctx)
+        return np.mean([m[SELECT] for m in cvs[trial.number]])
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=ctx["seed"]))
+    study.optimize(objective, n_trials=n_trials)
+    return study.best_params, cvs[study.best_trial.number]
+
+
 def search(name, cfg, train, folds, ctx):
     """Returns (best params, per-fold metrics of the best params)."""
-    return grid_search(name, cfg["models"][name], train, folds, ctx)
+    mcfg = cfg["models"][name]
+    if "space" in mcfg:
+        return optuna_search(name, mcfg["space"], mcfg["n_trials"], train, folds, ctx)
+    return grid_search(name, mcfg, train, folds, ctx)
