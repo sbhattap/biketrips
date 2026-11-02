@@ -63,3 +63,15 @@ def latest(path):
     m = pd.read_csv(path)
     last = m.groupby(["model", "split_type"])["timestamp"].transform("max")
     return m[m["timestamp"] == last]
+
+
+def test_table(path, metrics):
+    m = latest(path)
+    m = m[(m["fold"] == "test") & m["metric"].isin(metrics)]
+    return m.pivot_table(index=["model", "split_type"], columns="metric", values="value")[metrics]
+
+
+def hit_curve(preds, fracs):
+    return pd.DataFrame([{"model": m, "split_type": s, "top_frac": f,
+                          "hit": top_hit_rate(g["trips"].to_numpy(), g["pred"].to_numpy(), f)}
+                         for (m, s), g in preds.groupby(["model", "split_type"]) for f in fracs])

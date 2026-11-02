@@ -59,3 +59,32 @@ def importance(series, ax=None, top=20, title="Feature importance (total gain)")
     ax = _ax(ax, (7, 7))
     s = series.head(top)[::-1]
     return bar(s / s.max(), ax, title, "relative gain", horizontal=True)
+
+
+def split_comparison(table, metrics, axes=None):
+    """Grouped bars per model: random vs spatial test score for each metric."""
+    axes = axes if axes is not None else plt.subplots(1, len(metrics), figsize=(5 * len(metrics), 4))[1]
+    for ax, m in zip(np.atleast_1d(axes), metrics):
+        table[m].unstack("split_type")[["random", "spatial"]].plot.bar(ax=ax, rot=0)
+        ax.set(title=m, xlabel="")
+        ax.legend(fontsize=8, loc="lower left")
+    return axes
+
+
+def hit_curve(df, ax=None, split_type="spatial"):
+    ax = _ax(ax)
+    d = df[df["split_type"] == split_type]
+    for model, g in d.groupby("model"):
+        ax.plot(g["top_frac"] * 100, g["hit"], marker="o", label=model)
+    ax.set(title=f"Top-k% hit rate ({split_type} test)", xlabel="k (% of cells)", ylabel="hit rate")
+    ax.legend()
+    return ax
+
+
+def residual_map(preds, model, split_type, ax=None):
+    """log1p(pred) - log1p(true) on test cells: red = over-predicted, blue = under-predicted."""
+    d = preds[(preds["model"] == model) & (preds["split_type"] == split_type)]
+    d = d.assign(resid=np.log1p(d["pred"]) - np.log1p(d["trips"]))
+    v = d["resid"].abs().quantile(0.95)
+    return cell_map(d, "resid", ax, title=f"{model} residuals, {split_type} test, log scale",
+                    cmap="RdBu_r", vmin=-v, vmax=v)

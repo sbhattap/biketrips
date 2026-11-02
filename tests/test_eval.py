@@ -39,9 +39,11 @@ def test_top_hit_rate_counts_overlap():
 
 
 @pytest.mark.parametrize("name,params", [("linear", {"alpha": 1.0}), ("knn", {"k": 5}),
-                                         ("poisson", {"alpha": 0.01}), ("xgb", {"n_estimators": 20})])
+                                         ("poisson", {"alpha": 0.01}), ("xgb", {"n_estimators": 20}),
+                                         ("gcn", {"hidden": 8, "k": 4, "lr": 0.01, "dropout": 0.0,
+                                                  "max_epochs": 20, "patience": 5, "val_frac": 0.2})])
 def test_models_share_interface(cells, name, params):
-    pred = make(name, ["f1", "f2"], params).fit(cells.iloc[:300], cells.trips[:300]).predict(cells.iloc[300:])
+    pred = make(name, ["f1", "f2"], params, cells=cells).fit(cells.iloc[:300], cells.trips[:300]).predict(cells.iloc[300:])
     assert pred.shape == (100,) and np.isfinite(pred).all()
 
 

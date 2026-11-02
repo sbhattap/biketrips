@@ -30,3 +30,20 @@ xgb:
     subsample: 0.7781664064121103
     colsample_bytree: 0.5815924087231175
     reg_lambda: 6.729109439459797
+gcn:
+  random:
+    dropout: 0.3
+    hidden: 16
+    k: 4
+    lr: 0.003
+    max_epochs: 2000
+    patience: 100
+    val_frac: 0.2
+  spatial:
+    dropout: 0.3
+    hidden: 16
+    k: 4
+    lr: 0.003
+    max_epochs: 2000
+    patience: 100
+    val_frac: 0.2
