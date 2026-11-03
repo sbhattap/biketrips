@@ -46,6 +46,15 @@ def optuna_search(name, space, n_trials, train, folds, ctx):
     return study.best_params, cvs[study.best_trial.number]
 
 
+def out_of_fold(name, params, cells, folds, ctx):
+    """A prediction for every cell from a model that never saw that cell's fold, for city-wide maps."""
+    pred = np.zeros(len(cells))
+    for tr, va in folds:
+        model = make(name, ctx["features"], params, ctx["seed"], ctx["cells"])
+        pred[va] = model.fit(cells.iloc[tr], cells["trips"].iloc[tr]).predict(cells.iloc[va])
+    return pred
+
+
 def search(name, cfg, train, folds, ctx):
     """Returns (best params, per-fold metrics of the best params)."""
     mcfg = cfg["models"][name]

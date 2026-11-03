@@ -16,3 +16,6 @@ __pycache__/
 *.joblib
 *.parquet
 results/predictions*/
+
+# The offline map embeds Plotly (about 7 MB); rebuild it with scripts/build_map.py
+results/figures/demand_map.html

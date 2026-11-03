@@ -50,6 +50,19 @@ Full table (MAE, RMSE, Poisson deviance, clipping counts, inner-CV scores, error
 ![Residual map](results/figures/residual_map.png)
 ![Feature importance](results/figures/xgb_importance.png)
 
+### Interactive map
+
+![Interactive map, XGBoost error layer](results/figures/map_preview.png)
+
+`python scripts/build_map.py` writes `results/figures/demand_map.html`: one file that opens by double-click and works without internet (Plotly is embedded and no map tiles are used). A menu on the map switches between 18 layers:
+
+- **Actual trips** over the 30 days.
+- **Each model's prediction**, on the same log scale as the actual trips.
+- **Each model's error**: red is over-predicted, blue under-predicted. Above, XGBoost misses the western hubs (blue) and over-predicts Longhua and the north-east (red).
+- **Weeks of service**: cells with trips every week, some weeks, or never. Never-served cells with POIs are marked as gaps.
+
+Hover or tap a cell to see its trips, weeks served, POIs and every model's prediction and error. Scroll or pinch to zoom. Each cell is predicted by a model that never saw its city block, using the tuned spatial settings (`results/oof_predictions.csv`); the GCN still sees every cell's features. To view it from a remote machine, copy the file over (`scp`) or open it in a browser on any laptop or tablet; on an iPad, a file app with a built-in browser runs it offline.
+
 ## What we found in the data
 
 - **Small samples are badly noisy.** A 100k-trip sample leaves 846 of 2,182 active cells looking empty, with a median per-cell error of 43% after scaling. Even one full file (10M trips) misses 231 active cells.
@@ -78,6 +91,7 @@ uv pip install -e ".[dev]"
 python scripts/download_data.py           # about 2 GB from the public Google Drive folder
 python scripts/build_features.py          # cleaning + features, about 30 s
 python scripts/run_experiments.py --model all
+python scripts/build_map.py              # offline HTML map, about 15 s
 jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb notebooks/02_results.ipynb
 pytest
 ```
@@ -88,7 +102,7 @@ All paths, seeds (42) and search spaces are in `configs/config.yaml`. The GCN us
 
 ```
 configs/config.yaml        paths, H3 settings, CV, search spaces
-scripts/                   download, build features, run experiments
+scripts/                   download, build features, run experiments, build the map
 src/biketrips/             data, quality, features, splits, models/, tune, evaluate, plots
 notebooks/                 00 starting-point tutorial (unchanged), 01 EDA, 02 results
 results/                   metrics.csv, best_params.yaml, data_quality.md, predictions, figures/
