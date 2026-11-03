@@ -38,8 +38,17 @@ def test_top_hit_rate_counts_overlap():
     assert evaluate.top_hit_rate(y, y, 0.2) == 1
 
 
+def test_baseline_lr_uses_its_three_pois_and_nonzero_cells(cells):
+    from biketrips.models.baseline_lr import BASELINE_FEATURES
+    df = cells.assign(**{f: cells["f1"] for f in BASELINE_FEATURES}, trips=cells["trips"] * (cells.index % 2))
+    m = make("baseline_lr", [], {"nonzero_only": True}).fit(df, df["trips"])
+    full = make("baseline_lr", [], {"nonzero_only": False}).fit(df, df["trips"])
+    assert m.model.intercept_ > full.model.intercept_  # zeros pull the all-cells fit down
+
+
 @pytest.mark.parametrize("name,params", [("linear", {"alpha": 1.0}), ("knn", {"k": 5}),
                                          ("poisson", {"alpha": 0.01}), ("xgb", {"n_estimators": 20}),
+                                         ("hgb", {"max_iter": 20}), ("hurdle", {"max_iter": 20}),
                                          ("gcn", {"hidden": 8, "k": 4, "lr": 0.01, "dropout": 0.0,
                                                   "max_epochs": 20, "patience": 5, "val_frac": 0.2})])
 def test_models_share_interface(cells, name, params):

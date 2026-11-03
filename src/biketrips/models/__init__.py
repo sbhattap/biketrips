@@ -1,4 +1,4 @@
-"""Five models behind one interface: Model(features, seed, **params).fit(X, y).predict(X).
+"""Seven models plus the baseline LR behind one interface: Model(features, seed, **params).fit(X, y).predict(X).
 
 X is always a slice of the cell table, so models can pick feature columns, coordinates,
 or (for the GCN) graph positions by H3 index.
@@ -21,9 +21,10 @@ def tabular(estimator):
 
 
 def make(name, features, params, seed=42, cells=None):
-    from biketrips.models import gcn, knn, linear, poisson, xgb
-    registry = {"linear": linear.Linear, "knn": knn.SpatialKNN, "poisson": poisson.PoissonGLM, "xgb": xgb.XGB,
-                "gcn": gcn.GCN}
+    from biketrips.models import baseline_lr, gcn, hgb, hurdle, knn, linear, poisson, xgb
+    registry = {"baseline_lr": baseline_lr.BaselineLR, "linear": linear.Linear, "knn": knn.SpatialKNN,
+                "poisson": poisson.PoissonGLM, "xgb": xgb.XGB, "hgb": hgb.HGB,
+                "hurdle": hurdle.Hurdle, "gcn": gcn.GCN}
     if name == "gcn":
         params = dict(params, cells=cells)
     return registry[name](features, seed, **params)

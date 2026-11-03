@@ -35,7 +35,7 @@ def optuna_search(name, space, n_trials, train, folds, ctx):
 
     def objective(trial):
         params = {k: trial.suggest_int(k, lo, hi) if isinstance(lo, int) and isinstance(hi, int)
-                  else trial.suggest_float(k, lo, hi, log=k in ("learning_rate", "reg_lambda"))
+                  else trial.suggest_float(k, lo, hi, log=k in ("learning_rate", "reg_lambda", "l2_regularization"))
                   for k, (lo, hi) in space.items()}
         cvs[trial.number] = cross_validate(name, params, train, folds, ctx)
         return np.mean([m[SELECT] for m in cvs[trial.number]])

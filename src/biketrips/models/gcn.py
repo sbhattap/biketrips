@@ -9,7 +9,7 @@ from biketrips.models import Model
 
 
 class Net(nn.Module):
-    """The tutorial's two-layer GCN with a linear head; the head outputs a log rate."""
+    """Two-layer GCN with a linear head; the head outputs a log rate."""
 
     def __init__(self, n_in, hidden, dropout):
         super().__init__()

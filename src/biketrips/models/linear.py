@@ -5,7 +5,8 @@ from biketrips.models import Model, tabular
 
 
 class Linear(Model):
-    """Tutorial baseline, fit on log1p(trips) and back-transformed for scoring."""
+    """Ridge on log1p(trips) with log1p features, back-transformed for scoring. A log-scale,
+    all-features variant of Baseline LR (models/baseline_lr.py)."""
 
     def fit(self, X, y):
         self.pipe = tabular(Ridge(alpha=self.params["alpha"])).fit(X[self.features], np.log1p(y))

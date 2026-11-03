@@ -1,4 +1,4 @@
-"""Download the tutorial's public data folder and unzip trips and POIs in place."""
+"""Download the public data folder and unzip trips and POIs in place."""
 import zipfile
 
 import gdown

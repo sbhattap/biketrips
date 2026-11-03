@@ -8,7 +8,7 @@ import yaml
 from biketrips import config, evaluate, features, plots, splits, tune
 from biketrips.models import make
 
-MODELS = ["linear", "knn", "poisson", "xgb", "gcn"]
+MODELS = ["baseline_lr", "linear", "knn", "poisson", "xgb", "hgb", "hurdle", "gcn"]
 
 
 def run(name, cfg, cells):

@@ -55,7 +55,7 @@ def test_droplog_rerun_replaces_stage(tmp_path):
     assert len(pd.read_csv(tmp_path / "log.csv")) == 1
 
 
-def test_sanitize_matches_tutorial_rule():
+def test_sanitize_category_names():
     assert data.sanitize("Science/Culture & Education Service") == "ScienceCultureEducationService"
 
 
