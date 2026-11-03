@@ -9,7 +9,9 @@ import pandas as pd
 RULES = [
     ("missing_id", "trip_id IS NULL"),
     ("duplicate_id", "dup_rank > 1"),
+    ("duplicate_trip", "trip_rank > 1 AND start_time IS NOT NULL"),
     ("bad_timestamp", "start_time IS NULL OR end_time IS NULL"),
+    ("outside_window", "start_time < TIMESTAMP '{w0}' OR start_time >= TIMESTAMP '{w1}'"),
     ("end_before_start", "end_time < start_time"),
     ("zero_duration", "duration_s < {min_duration_s}"),
     ("extreme_duration", "duration_s > {max_duration_s}"),
@@ -21,6 +23,8 @@ RULES = [
 ]
 REASONS = {
     "missing_id": "no trip id", "duplicate_id": "repeated trip id, first kept",
+    "duplicate_trip": "same user, start time and start point under another id, first kept",
+    "outside_window": "start time outside the study window",
     "bad_timestamp": "null or unparseable timestamp", "end_before_start": "end time before start",
     "zero_duration": "duration under min_duration_s", "extreme_duration": "duration over max_duration_s",
     "missing_coords": "null coordinate", "zero_coords": "GPS (0, 0) placeholder",
@@ -47,7 +51,9 @@ def raw_trips_sql(csv, frac=1.0, seed=42):
         TRY_CAST(START_TIME AS TIMESTAMP) AS start_time, TRY_CAST(END_TIME AS TIMESTAMP) AS end_time,
         TRY_CAST(START_LAT AS DOUBLE) AS start_lat, TRY_CAST(START_LNG AS DOUBLE) AS start_lng,
         TRY_CAST(END_LAT AS DOUBLE) AS end_lat, TRY_CAST(END_LNG AS DOUBLE) AS end_lng,
-        row_number() OVER (PARTITION BY _id ORDER BY START_TIME) AS dup_rank
+        row_number() OVER (PARTITION BY _id ORDER BY START_TIME) AS dup_rank,
+        -- The files overlap, and some trips appear twice under different ids.
+        row_number() OVER (PARTITION BY USER_ID, START_TIME, START_LAT, START_LNG ORDER BY _id) AS trip_rank
         FROM read_csv('{csv}', all_varchar = true) WHERE {sample_filter(frac, seed)}"""
 
 
@@ -58,7 +64,8 @@ def _bounds(cfg, p):
 
 def clean_trips(con, cfg, frac=1.0, log=None, csv=None):
     """Build DuckDB tables `trips_flagged` (all rows + drop_reason) and `trips` (clean, WGS84 + H3)."""
-    fmt = dict(cfg["cleaning"], start_ok=_bounds(cfg, "start"), end_ok=_bounds(cfg, "end"))
+    w0, w1 = cfg["cleaning"]["window"]
+    fmt = dict(cfg["cleaning"], start_ok=_bounds(cfg, "start"), end_ok=_bounds(cfg, "end"), w0=w0, w1=w1)
     case = " ".join(f"WHEN {cond.format(**fmt)} THEN '{name}'" for name, cond in RULES)
     raw = raw_trips_sql(csv or cfg["data"]["trips_csv"], frac, cfg["seed"])
     con.sql(f"""CREATE OR REPLACE TABLE trips_flagged AS

@@ -17,7 +17,7 @@ def main():
     d = load_config()["data"]
     if not d["trips_zip"].exists():
         gdown.download_folder(d["drive_folder"], output=str(d["raw_dir"]), quiet=False)
-    if not d["trips_csv"].exists():
+    if not any(d["trips_csv"].parent.glob(d["trips_csv"].name)):
         unzip(d["trips_zip"], d["trips_zip"].parent)
     if not d["poi_dir"].exists():
         unzip(d["poi_zip"], d["poi_zip"].parent)

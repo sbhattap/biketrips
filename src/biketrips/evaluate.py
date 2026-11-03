@@ -34,11 +34,29 @@ def metrics(y, pred, top_frac=0.1):
 
 
 def score(cells, pred, top_frac=0.1):
-    """Metrics on all test cells and on non-trivial cells only (suffix `_nontrivial`)."""
-    out = metrics(cells["trips"], pred, top_frac)
-    keep = cells["trivial"].to_numpy() == 0
-    out.update({f"{k}_nontrivial": v for k, v in metrics(cells["trips"][keep], pred[keep], top_frac).items()})
+    """Metrics on all test cells, then on two subsets.
+
+    `_nontrivial`: cells with POIs or population. `_served`: cells with trips in every week. The
+    second mask is built from the target, so it is an oracle: it shows how much knowing the
+    operator's service area could add at most, not a score a deployed model would get."""
+    out, pred = metrics(cells["trips"], pred, top_frac), np.asarray(pred)
+    subsets = {"nontrivial": cells["trivial"] == 0}
+    if "always_served" in cells:
+        subsets["served"] = cells["always_served"] == 1
+    for name, keep in subsets.items():
+        keep = keep.to_numpy()
+        out.update({f"{k}_{name}": v for k, v in metrics(cells["trips"][keep], pred[keep], top_frac).items()})
     return out
+
+
+def error_share(preds, cells, by="weeks_served"):
+    """Share of each model's total absolute test error that falls in each group of cells."""
+    d = preds.merge(cells[["h3", by]], on="h3")
+    d["abs_err"] = (d["pred"].clip(lower=0) - d["trips"]).abs()
+    g = d.groupby(["model", "split_type", by]).agg(cells=("h3", "size"), trips=("trips", "sum"),
+                                                   pred=("pred", "sum"), abs_err=("abs_err", "sum"))
+    g["err_share"] = g["abs_err"] / g.groupby(["model", "split_type"])["abs_err"].transform("sum")
+    return g
 
 
 def git_sha():

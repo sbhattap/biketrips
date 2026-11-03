@@ -48,21 +48,35 @@ def neighbor_mean(adj, values):
     return np.where(deg > 0, adj @ np.asarray(values, float) / np.maximum(deg, 1), np.nan)
 
 
-def trip_target(con, grid, log=None):
-    """Trip-end counts on the full grid. Missing cells get 0 trips, which is a measured zero."""
-    counts = con.sql("SELECT end_cell AS h3, count(*) AS trips FROM trips GROUP BY 1").df()
+def trip_target(con, grid, log=None, week_start=None, weeks=0):
+    """Trip-end counts on the full grid. Missing cells get 0 trips, which is a measured zero.
+
+    With `weeks`, also counts per week (trips_w1, ...) and in how many weeks a cell had any trip.
+    A cell empty every week looks like a gap in the operator's service, not a quiet week."""
+    t0 = f"TIMESTAMP '{week_start}'"
+    wk = "".join(f", count(*) FILTER (WHERE start_time >= {t0} + INTERVAL {7 * k} DAY AND start_time < "
+                 f"{t0} + INTERVAL {7 * (k + 1)} DAY) AS trips_w{k + 1}" for k in range(weeks))
+    counts = con.sql(f"SELECT end_cell AS h3, count(*) AS trips{wk} FROM trips GROUP BY 1").df()
     out = grid.merge(counts, on="h3", how="left")
     outside = counts.loc[~counts["h3"].isin(grid["h3"]), "trips"].sum()
     n_trips = counts["trips"].sum()
     filled = out["trips"].isna().sum()
-    out["trips"] = out["trips"].fillna(0).astype(int)
+    week_cols = [f"trips_w{k + 1}" for k in range(weeks)]
+    out[["trips"] + week_cols] = out[["trips"] + week_cols].fillna(0).astype(int)
     out["is_zero"] = (out["trips"] == 0).astype(int)
+    if weeks:
+        out["weeks_served"] = (out[week_cols] > 0).sum(axis=1)
+        out["always_served"] = (out["weeks_served"] == weeks).astype(int)
     if log is not None:
         log.start("cells")
         log.add("cells", "trip ends outside grid", "drop", outside, n_trips,
                 "end cell centre outside the buffered boundary")
         log.add("cells", "cells with no trip end", "fill", filled, len(out),
                 "trips = 0, is_zero = 1; zero may mean no bikes (supply), not no demand")
+        if weeks:
+            log.add("cells", "cells with trips in some weeks only", "flag",
+                    out["weeks_served"].between(1, weeks - 1).sum(), len(out),
+                    f"intermittent service; always_served = 1 needs trips in all {weeks} weeks")
     return out
 
 
@@ -128,7 +142,7 @@ def build_cells(cfg, con, log=None):
     """One row per H3 cell on the full grid: target, flags, features, and the spatial group id."""
     res, d = cfg["features"]["h3_res"], cfg["data"]
     grid = full_grid(data.load_boundary(cfg), res, cfg["features"]["boundary_buffer_deg"])
-    cells = trip_target(con, grid, log)
+    cells = trip_target(con, grid, log, cfg["cleaning"]["window"][0], cfg["features"]["weeks"])
     poi = poi_counts(data.load_pois(cfg, log), grid, res, log)
     metro, bus = data.load_transit(cfg, log)
     for part in (poi, population(d["population"], grid, res, log), transit(grid, metro, bus, res)):

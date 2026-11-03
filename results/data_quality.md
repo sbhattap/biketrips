@@ -7,30 +7,33 @@ fix and flag is listed with a row count and a reason.
 
 | step | action | rows | of | share | reason |
 |---|---|---|---|---|---|
-| raw rows | info | 9,980,998 | 9,980,998 | 100.0000% | 100% of 21_1000w.csv |
-| missing_id | drop | 0 | 9,980,998 | 0.0000% | no trip id |
-| duplicate_id | drop | 0 | 9,980,998 | 0.0000% | repeated trip id, first kept |
-| bad_timestamp | drop | 0 | 9,980,998 | 0.0000% | null or unparseable timestamp |
-| end_before_start | drop | 0 | 9,980,998 | 0.0000% | end time before start |
-| zero_duration | drop | 1,356 | 9,980,998 | 0.0136% | duration under min_duration_s |
-| extreme_duration | drop | 50 | 9,979,642 | 0.0005% | duration over max_duration_s |
-| missing_coords | drop | 0 | 9,979,592 | 0.0000% | null coordinate |
-| zero_coords | drop | 11,539 | 9,979,592 | 0.1156% | GPS (0, 0) placeholder |
-| start_out_of_bounds | drop | 2,025 | 9,968,053 | 0.0203% | start outside Shenzhen bbox |
-| end_out_of_bounds | drop | 318 | 9,966,028 | 0.0032% | start in bbox, end outside |
-| coordinate shift | fix | 9,965,710 | 9,965,710 | 100.0000% | GCJ-02 to WGS84 via gcj_offset |
+| raw rows | info | 44,623,001 | 44,623,001 | 100.0000% | 100% of 2*_1000w.csv |
+| missing_id | drop | 0 | 44,623,001 | 0.0000% | no trip id |
+| duplicate_id | drop | 0 | 44,623,001 | 0.0000% | repeated trip id, first kept |
+| duplicate_trip | drop | 77,020 | 44,623,001 | 0.1726% | same user, start time and start point under another id, first kept |
+| bad_timestamp | drop | 0 | 44,545,981 | 0.0000% | null or unparseable timestamp |
+| outside_window | drop | 39,204 | 44,545,981 | 0.0880% | start time outside the study window |
+| end_before_start | drop | 0 | 44,506,777 | 0.0000% | end time before start |
+| zero_duration | drop | 7,346 | 44,506,777 | 0.0165% | duration under min_duration_s |
+| extreme_duration | drop | 134 | 44,499,431 | 0.0003% | duration over max_duration_s |
+| missing_coords | drop | 0 | 44,499,297 | 0.0000% | null coordinate |
+| zero_coords | drop | 47,825 | 44,499,297 | 0.1075% | GPS (0, 0) placeholder |
+| start_out_of_bounds | drop | 6,001 | 44,451,472 | 0.0135% | start outside Shenzhen bbox |
+| end_out_of_bounds | drop | 981 | 44,445,471 | 0.0022% | start in bbox, end outside |
+| coordinate shift | fix | 44,444,490 | 44,444,490 | 100.0000% | GCJ-02 to WGS84 via gcj_offset |
 
 ## cells
 
 | step | action | rows | of | share | reason |
 |---|---|---|---|---|---|
-| trip ends outside grid | drop | 534 | 9,965,710 | 0.0054% | end cell centre outside the buffered boundary |
-| cells with no trip end | fill | 1,374 | 3,272 | 41.9927% | trips = 0, is_zero = 1; zero may mean no bikes (supply), not no demand |
+| trip ends outside grid | drop | 2,583 | 44,444,490 | 0.0058% | end cell centre outside the buffered boundary |
+| cells with no trip end | fill | 1,090 | 3,272 | 33.3130% | trips = 0, is_zero = 1; zero may mean no bikes (supply), not no demand |
+| cells with trips in some weeks only | flag | 435 | 3,272 | 13.2946% | intermittent service; always_served = 1 needs trips in all 4 weeks |
 | POIs outside grid | drop | 2 | 1,126,565 | 0.0002% | POI cell not in buffered boundary grid |
 | POI counts missing | fill | 15,801 | 75,256 | 20.9963% | cell x category with no POI = 0 (true zero) |
 | population outside raster coverage | flag | 998 | 3,272 | 30.5012% | kept as NaN + pop_missing; imputed inside model pipelines on training folds only |
 | trivial cells | flag | 608 | 3,272 | 18.5819% | zero POIs and zero or unknown population; metrics reported with and without them |
-| trivial cells with trips | info | 64 | 608 | 10.5263% | trivial cells that still have trip ends |
+| trivial cells with trips | info | 133 | 608 | 21.8750% | trivial cells that still have trip ends |
 
 ## pois
 

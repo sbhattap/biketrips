@@ -129,6 +129,14 @@ def sample_noise(con, cells, fractions, seed):
     return pd.DataFrame(rows)
 
 
+def zero_persistence(cells, weeks):
+    """Per week: share of zero cells, share of week-1 zero cells still zero, rank agreement with week 1."""
+    w = cells[[f"trips_w{k}" for k in range(1, weeks + 1)]]
+    zero1 = w.iloc[:, 0] == 0
+    return pd.DataFrame({"zero_share": (w == 0).mean(), "still_zero_if_zero_in_w1": (w[zero1] == 0).mean(),
+                         "spearman_vs_w1": [spearmanr(w.iloc[:, 0], w[c])[0] for c in w]})
+
+
 def correlations(cells, cols, target="trips"):
     """Spearman correlation of each feature with the target, strongest first."""
     rho = {c: spearmanr(cells[c], cells[target], nan_policy="omit")[0] for c in cols}

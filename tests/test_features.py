@@ -25,6 +25,15 @@ def test_target_on_full_grid_keeps_zeros(grid):
     assert t["is_zero"].sum() == len(grid) - 2
 
 
+def test_weekly_counts_and_served_weeks(grid):
+    con = data.connect()
+    con.sql(f"""CREATE TABLE trips AS SELECT * FROM (VALUES ('{CENTER}', TIMESTAMP '2021-08-01'),
+        ('{CENTER}', TIMESTAMP '2021-08-09'), ('{grid["h3"].iloc[0]}', TIMESTAMP '2021-08-02')) t(end_cell, start_time)""")
+    t = features.trip_target(con, grid, week_start="2021-07-31", weeks=2).set_index("h3")
+    assert t.loc[CENTER, ["trips_w1", "trips_w2", "weeks_served", "always_served"]].tolist() == [1, 1, 2, 1]
+    assert t["always_served"].sum() == 1 and t["weeks_served"].sum() == 3
+
+
 def test_poi_counts_fill_true_zeros(grid):
     lat, lng = h3.h3_to_geo(CENTER)
     pois = gpd.GeoDataFrame({"category": ["Shopping", "Shopping", "MedicalService"]},

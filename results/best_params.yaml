@@ -2,34 +2,34 @@ linear:
   random:
     alpha: 100.0
   spatial:
-    alpha: 0.001
+    alpha: 100.0
 knn:
   random:
     k: 3
   spatial:
-    k: 20
+    k: 8
 poisson:
   random:
     alpha: 10.0
   spatial:
-    alpha: 1.0
+    alpha: 10.0
 xgb:
   random:
-    n_estimators: 437
-    max_depth: 3
-    learning_rate: 0.10121644277594667
-    min_child_weight: 2
-    subsample: 0.7991341332960198
-    colsample_bytree: 0.5797511266530957
-    reg_lambda: 0.5195693495666391
+    n_estimators: 488
+    max_depth: 4
+    learning_rate: 0.0389428920348173
+    min_child_weight: 4
+    subsample: 0.6017774608893249
+    colsample_bytree: 0.7048192439418706
+    reg_lambda: 3.776382296107197
   spatial:
-    n_estimators: 280
-    max_depth: 3
-    learning_rate: 0.06697564702803946
+    n_estimators: 230
+    max_depth: 4
+    learning_rate: 0.05815056998913016
     min_child_weight: 6
-    subsample: 0.7781664064121103
-    colsample_bytree: 0.5815924087231175
-    reg_lambda: 6.729109439459797
+    subsample: 0.8468942487517535
+    colsample_bytree: 0.5563607644731673
+    reg_lambda: 3.588438611877875
 gcn:
   random:
     dropout: 0.3
@@ -54,31 +54,31 @@ baseline_lr:
     nonzero_only: true
 hgb:
   random:
-    max_iter: 412
-    max_depth: 6
-    learning_rate: 0.024363504414124642
-    min_samples_leaf: 38
-    max_features: 0.8257530397950996
-    l2_regularization: 4.452891488888294
+    max_iter: 468
+    max_depth: 7
+    learning_rate: 0.01889814105794675
+    min_samples_leaf: 29
+    max_features: 0.9260221516099415
+    l2_regularization: 0.00118016709830866
   spatial:
-    max_iter: 364
-    max_depth: 4
-    learning_rate: 0.022311954770326606
-    min_samples_leaf: 8
-    max_features: 0.8004041397412571
-    l2_regularization: 0.38744843917153293
+    max_iter: 374
+    max_depth: 3
+    learning_rate: 0.03037539344457842
+    min_samples_leaf: 7
+    max_features: 0.9590499893826069
+    l2_regularization: 0.17171047475313023
 hurdle:
   random:
-    max_iter: 362
+    max_iter: 312
     max_depth: 8
-    learning_rate: 0.021336270166779196
-    min_samples_leaf: 46
-    max_features: 0.5930269188000995
-    l2_regularization: 0.60034720465864
+    learning_rate: 0.03172489472832341
+    min_samples_leaf: 24
+    max_features: 0.9512954106484774
+    l2_regularization: 0.004948179108963099
   spatial:
-    max_iter: 491
-    max_depth: 5
-    learning_rate: 0.012811701365209184
-    min_samples_leaf: 21
-    max_features: 0.5100656745247191
-    l2_regularization: 0.01605382997825953
+    max_iter: 403
+    max_depth: 4
+    learning_rate: 0.019876577560597592
+    min_samples_leaf: 9
+    max_features: 0.40208044296967865
+    l2_regularization: 0.30929884841311683

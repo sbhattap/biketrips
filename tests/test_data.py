@@ -16,15 +16,18 @@ ROWS = {  # trip id -> (start_time, start_lat, end_time, end_lng, start_lng, end
     "origin": (T0, 0, T1, 114.0, 0, 22.6),
     "far": (T0, 43.9, T1, 114.0, 126.4, 22.6),
     "endfar": (T0, 22.5, T1, 120.0, 114.0, 22.6),
+    "twin": (T0, 22.5, T1, 114.0, 114.0, 22.6),  # same trip as "ok" under another id
+    "early": ("2019-10-18 14:52:44.0", 22.5, "2019-10-18 15:00:00.0", 114.0, 114.0, 22.6),
 }
-EXPECTED = {"duplicate_id": 1, "bad_timestamp": 1, "end_before_start": 1, "zero_duration": 1,
+EXPECTED = {"duplicate_id": 1, "duplicate_trip": 1, "outside_window": 1, "bad_timestamp": 1, "end_before_start": 1, "zero_duration": 1,
             "extreme_duration": 1, "missing_coords": 1, "zero_coords": 1, "start_out_of_bounds": 1,
             "end_out_of_bounds": 1, None: 1}
 
 
 @pytest.fixture
 def trips_csv(tmp_path):
-    lines = [HEADER] + [f"{i},{k.replace('dup', 'ok')},{s},{sl},{e},{el},u,{sg},{ea}"
+    # Every row gets its own user except "twin", which repeats the "ok" trip.
+    lines = [HEADER] + [f"{i},{k.replace('dup', 'ok')},{s},{sl},{e},{el},u{0 if k == 'twin' else i},{sg},{ea}"
                         for i, (k, (s, sl, e, el, sg, ea)) in enumerate(ROWS.items())]
     path = tmp_path / "trips.csv"
     path.write_text("\n".join(lines))

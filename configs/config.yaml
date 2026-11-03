@@ -7,7 +7,9 @@ data:
   processed_dir: data/processed
   results_dir: results
   # Relative to raw_dir/"Shenzhen Bike-Share Data"
-  trips_csv: 8.01-8.30/shared_bike_data/21_1000w.csv
+  # All five trip files (44.6M rows). They overlap by a few days at each boundary, so trips are
+  # de-duplicated on content as well as on id.
+  trips_csv: 8.01-8.30/shared_bike_data/2*_1000w.csv
   trips_zip: 8.01-8.30/shared_bike_data.zip
   poi_zip: ShenzhenPOI/ShapeFile.zip
   poi_dir: ShenzhenPOI/ShapeFile
@@ -23,16 +25,22 @@ cleaning:
   min_duration_s: 1
   # Shared bikes are short-hop vehicles; multi-hour rentals are mostly unlocked-and-forgotten bikes.
   max_duration_s: 14400
+  # [start, end) of the study window: the 30 days the files cover continuously. Earlier and later
+  # timestamps are a few thousand strays (back to 2019) or a trailing partial day.
+  window: ["2021-07-31", "2021-08-30"]
 
 eda:
   sample_fraction: 0.10
-  noise_fractions: [0.01, 0.10, 1.0]
+  # About 100k trips (the original 1% sample size), 1M, 10M (one trip file) and all trips.
+  noise_fractions: [0.00225, 0.0225, 0.225, 1.0]
 
 features:
   h3_res: 8
   parent_res: 6
   # Buffer the boundary by about one res-8 edge so coastal cells that touch the city are kept.
   boundary_buffer_deg: 0.005
+  # Full weeks from the window start used to test whether zero cells stay zero.
+  weeks: 4
 
 cv:
   test_frac: 0.2
